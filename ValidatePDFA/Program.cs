@@ -23,7 +23,7 @@ namespace DocumentConversion
                 throw new ApiException("The Passport number given not active, please go to your PassportPDF dashboard and active your plan.");
             }
 
-            string uri = "https://passportpdfapi.com/test/invoice_with_barcode.pdf";
+            string uri = "https://passportpdfapi.com/test/pdfa_file.pdf";
 
             DocumentApi api = new();
 
@@ -34,13 +34,12 @@ namespace DocumentConversion
             PDFApi pdfApi = new();
 
 
-            // Check if PDF/A conformance level is PDFA3b
-            Console.WriteLine("Checking if conformance level of PDF/A file is PDF/A-3b ...");
+            // Check if PDF/A conformance level is PDFA3u
+            Console.WriteLine("Checking if conformance level of PDF/A file is PDF/A-3u ...");
 
-            PdfValidatePDFAResponse pdfValidatePdfaResponse = await pdfApi.ValidatePDFAAsync(new PdfValidatePDFAParameters(document.FileId));
-            pdfValidatePdfaResponse = await pdfApi.ValidatePDFAAsync(new PdfValidatePDFAParameters(document.FileId)
+            PdfValidatePDFAResponse pdfValidatePdfaResponse = await pdfApi.ValidatePDFAAsync(new PdfValidatePDFAParameters(document.FileId)
             {
-                Conformance = PdfAValidationConformance.PDFA3b
+                Conformance = PdfAValidationConformance.Autodetect
             });
 
             if (pdfValidatePdfaResponse.Error is not null)
@@ -49,20 +48,22 @@ namespace DocumentConversion
             }
             else
             {
-                if(pdfValidatePdfaResponse.Conformance == PdfAValidationConformance.PDFA3b)
+                Console.WriteLine("PDFA conformance level is : {0}", pdfValidatePdfaResponse.Conformance);
+
+                if(pdfValidatePdfaResponse.Conformance == PdfAValidationConformance.PDFA3u)
                 {
                     Console.WriteLine("Your PDF/A file has the right conformance level");
                 }
                 else
                 {
-                    Console.WriteLine("Your PDF/A file does NOT have the right conformance level. Running conversion process to have PDF/A-3b conformance level ...");
+                    Console.WriteLine("Your PDF/A file does NOT have the right conformance level. Running conversion process to have PDF/A-3u conformance level ...");
 
                     try
                     {
-                        // Convert PDF/A to your chosen conformance level : PDFA3b
+                        // Convert PDF/A to your chosen conformance level : PDFA3u
                         PdfConvertToPDFAResponse pdfConvertResponse = await pdfApi.ConvertToPDFAAsync(new PdfConvertToPDFAParameters(document.FileId)
                         {
-                            Conformance = PdfAConformance.PDFA3b
+                            Conformance = PdfAConformance.PDFA3u
                         });
 
                         if (pdfConvertResponse.Error is not null)
@@ -73,11 +74,11 @@ namespace DocumentConversion
                         {
                             Console.WriteLine("Conversion process finished successfully. Downloading the new PDF/A file ...");
 
-                            // Download file with PDF/A-3b conformance level
+                            // Download file with PDF/A-3u conformance level
 
                             PdfSaveDocumentResponse saveDocResponse = await pdfApi.SaveDocumentAsync(new PdfSaveDocumentParameters(document.FileId));
 
-                            string savePath = Path.Join(Directory.GetCurrentDirectory(), "pdfa3b_file.pdf");
+                            string savePath = Path.Join(Directory.GetCurrentDirectory(), "PDFA3u_file.pdf");
 
                             File.WriteAllBytes(savePath, saveDocResponse.Data);
 
